@@ -24,6 +24,24 @@
             android:text="View">
         </Button>
 
+        <Button
+            android:id="@+id/button_trck"
+            style="?android:attr/buttonStyleSmall"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="right"
+            android:onClick="trackMyLocation"
+            android:text="trck"/>
+
+        <Button
+            android:id="@+id/button_clr"
+            style="?android:attr/buttonStyleSmall"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="right"
+            android:onClick="clearMarkers"
+            android:text="clr"/>
+
         <EditText
             android:id="@+id/editText_name"
             android:layout_width="wrap_content"
@@ -38,7 +56,7 @@
             android:layout_height="wrap_content"
             android:layout_gravity = "right"
             android:onClick="onSearch"
-            android:text="Search"/>
+            android:text="Srch"/>
     </LinearLayout>
 
     <fragment xmlns:android="http://schemas.android.com/apk/res/android"
