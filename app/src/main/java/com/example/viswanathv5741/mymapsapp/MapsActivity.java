@@ -162,8 +162,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
             try{
                 //Get a list of the addresses
-                addressList = geocoder.getFromLocationName(location,100, userLocation.latitude - (5.0/60),userLocation.longitude - (5.0/60),
-                        userLocation.latitude + (5.0/60),userLocation.longitude + (5.0/60));
+                addressList = geocoder.getFromLocationName(location,100000, userLocation.latitude - (30.0/60),userLocation.longitude - (30.0/60),
+                        userLocation.latitude + (30.0/60),userLocation.longitude + (30.0/60));
 
                 Log.d("MyMapsApp", "onSearch, addressList is created");
             } catch (IOException e){
@@ -177,7 +177,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     LatLng latLng = new LatLng(address.getLatitude(),address.getLongitude());
 
                     // Place a marker on the map
-                    mMap.addMarker(new MarkerOptions().position(latLng).title(i+ ": " + address.getSubThoroughfare() + address.getSubThoroughfare()));
+                    //mMap.addMarker(new MarkerOptions().position(latLng).title(i+ ": " + address.getSubThoroughfare() + address.getSubThoroughfare()));
+                    Log.d("MyMapsApp", "onSearch: getting address for searched location");
+                    mMap.addMarker(new MarkerOptions().position(latLng).title((i+1) + ": " + address.getAddressLine(0)));
                     mMap.animateCamera(CameraUpdateFactory.newLatLng(latLng));
                 }
             }
