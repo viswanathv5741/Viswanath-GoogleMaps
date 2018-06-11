@@ -1,8 +1,12 @@
 package com.example.viswanathv5741.mymapsapp;
 
 import android.Manifest;
+import android.content.Context;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.hardware.Sensor;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.location.Address;
 import android.location.Criteria;
 import android.location.Geocoder;
@@ -10,12 +14,15 @@ import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.location.LocationProvider;
+import android.os.AsyncTask;
+import android.provider.DocumentsContract;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.Toast;
 
 import com.google.android.gms.maps.CameraUpdate;
@@ -24,9 +31,15 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapView;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
+
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+
 
 import java.io.IOException;
 import java.util.List;
@@ -44,6 +57,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private boolean notTrackingMyLocation = true;
     private boolean canGetLocation = false;
     private double latitude, longitude;
+    private String[] results;
+    private LatLng searchQ;
+    private SensorManager mSensorManager;
+    private Sensor mSensor;
 
     private static final long MIN_TIME_BW_UPDATES = 1000*5;
     private static final float MIN_DISTANCE_CHANGE_FOR_UPDATES = 0.0f;
@@ -162,8 +179,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
             try{
                 //Get a list of the addresses
-                addressList = geocoder.getFromLocationName(location,100000, userLocation.latitude - (30.0/60),userLocation.longitude - (30.0/60),
-                        userLocation.latitude + (30.0/60),userLocation.longitude + (30.0/60));
+                addressList = geocoder.getFromLocationName(location,1000, userLocation.latitude - (10.0/60),userLocation.longitude - (10.0/60),
+                        userLocation.latitude + (10.0/60),userLocation.longitude + (10.0/60));
 
                 Log.d("MyMapsApp", "onSearch, addressList is created");
             } catch (IOException e){
@@ -344,6 +361,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
         else{
             userLocation = new LatLng(myLocation.getLatitude(), myLocation.getLongitude());
+            latitude = myLocation.getLatitude();
+            longitude = myLocation.getLongitude();
             update = CameraUpdateFactory.newLatLngZoom(userLocation, MY_LOC_ZOOM_FACTOR);
         }
         if (provider == LocationManager.GPS_PROVIDER){
@@ -380,4 +399,243 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public void clearMarkers(View view){
         mMap.clear();
     }
+
+    public void onSearch2(View v) {
+
+        //This loop is a hack since the returned string has format inconsistencies which result in errors when parsing
+        //Doing it 10x is a hack to get one set of lat/lons for each location that work
+        for (int i = 0; i<10;i++){
+            Log.d("MyMaps", "Search activated");
+
+            //Get the POI url, eg.  https://maps.googleapis.com/maps/api/place/radarsearch/json?keyword=Starbucks&location=32.959076,-117.189433&radius=9000&key=AIzaSyAO_vWgA5nwAC-KAV_en4p-1GXPYpbg__M
+            String siteUrl = "https://maps.googleapis.com/maps/api/place/radarsearch/json?keyword=" +
+                    locationSearch.getText().toString() + "&location=" +
+                    latitude + "," + longitude + "&radius=9000&key=AIzaSyAO_vWgA5nwAC-KAV_en4p-1GXPYpbg__M";
+
+            Log.d("MyMaps", "POI url: " + siteUrl);
+            (new ParseURL()).execute(new String[]{siteUrl});
+        }
+    }
+
+
+    private class ParseURL extends AsyncTask<String, Void, String> {
+
+        @Override
+        protected String doInBackground(String... strings) {
+            String buffer = new String();
+            try {
+                Log.d("MyMaps", "Connecting to [" + strings[0] + "]");
+                Document doc = Jsoup.connect(strings[0]).ignoreContentType(true).get();
+                Log.d("MyMaps", "Connected to [" + strings[0] + "]");
+                // Get document (HTML page) title
+
+                Element bod = doc.body();
+                buffer = ("BOD TEXT  " + bod.text() );
+                Log.d("MyMaps", ""+buffer.toString());
+                results = new String[201];
+                int j = 0;
+                while (buffer.indexOf("location")>-1){
+                    mSensorManager = (SensorManager)getSystemService(Context.SENSOR_SERVICE);
+                    mSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR);
+                    results[j] = buffer.substring(buffer.indexOf("lat")+7,buffer.indexOf("lng")-3 ) + " " + buffer.substring(buffer.indexOf("lng")+7, buffer.indexOf("lng")+16);
+                    buffer = buffer.substring(buffer.indexOf("lng")+20);
+                    j++;
+                }
+
+
+                Log.d("MyMaps", ""+buffer.toString());
+                for (String str: results){
+                    Log.d("MyMaps", ""+str);
+                }
+                markMaker();
+
+
+
+            } catch (Throwable t) {
+                Log.d("MyMaps", "ERROR");
+                t.printStackTrace();
+            }
+
+            return buffer.toString();
+        }
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+        }
+
+        @Override
+        protected void onPostExecute(String s) {
+            super.onPostExecute(s);
+            //respText.setText(s);
+        }
+    }
+
+    public void markMaker(){
+
+        for (String str: results){
+
+
+            Log.d("MyMaps", "Start Marking");
+            searchQ = new LatLng(Double.parseDouble(str.substring(0,str.indexOf(" ")-1)), Double.parseDouble(str.substring(str.indexOf(" ")+1)));
+
+            Log.d("MyMaps", ""+searchQ.latitude + " "+searchQ.longitude);
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    mMap.addMarker(new MarkerOptions().position(searchQ).title(locationSearch.getText().toString()).icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)));
+
+                }
+            });
+            Log.d("MyMaps", "Stop Marking");
+        }
+    }
+
+    public class Compass implements SensorEventListener {
+        private static final String TAG = "Compass";
+
+        private SensorManager sensorManager;
+        private Sensor gsensor;
+        private Sensor msensor;
+        private float[] mGravity = new float[3];
+        private float[] mGeomagnetic = new float[3];
+        private float azimuth = 0f;
+        private float currectAzimuth = 0;
+
+        private boolean bearing = false;
+        private float bearingDegrees = -1;
+
+        // compass arrow to rotate
+        public ImageView arrowView = null;
+
+        FragmentActivity activity;
+
+        public Compass(FragmentActivity activity) {
+
+            this.activity = activity;
+
+            sensorManager = (SensorManager) activity.getApplicationContext()
+                    .getSystemService(Context.SENSOR_SERVICE);
+            gsensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+            msensor = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
+        }
+
+        public void start() {
+
+            boolean deviceSensorCompatible = true;
+
+            if(!sensorManager.registerListener(this, gsensor, SensorManager.SENSOR_DELAY_GAME))
+                deviceSensorCompatible = false;
+
+            if(!sensorManager.registerListener(this, msensor, SensorManager.SENSOR_DELAY_GAME))
+                deviceSensorCompatible = false;
+
+            if(!deviceSensorCompatible) {
+                Utility.ShowMessage(activity, activity.getString(R.string.erroroccured), activity.getString(R.string.deviceIncompatible),  1);
+                stop();
+            }
+        }
+
+        public void startBearing()
+        {
+            bearing = true;
+            start();
+        }
+
+        public void setBearingDegrees(float bearingDegrees)
+        {
+            this.bearingDegrees = bearingDegrees;
+        }
+
+        public void stop() {
+            sensorManager.unregisterListener(this);
+        }
+
+        public void stopBearing()
+        {
+            bearing = false;
+            stop();
+        }
+
+        private void adjustArrow() {
+            if (arrowView == null) {
+                Log.i(TAG, "arrow view is not set");
+                return;
+            }
+
+            Animation an = new RotateAnimation(-currectAzimuth, -azimuth,
+                    Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF,
+                    0.5f);
+            currectAzimuth = azimuth;
+
+            an.setDuration(250);
+            an.setRepeatCount(0);
+            an.setFillAfter(true);
+
+            arrowView.startAnimation(an);
+        }
+
+        @Override
+        public void onSensorChanged(SensorEvent event) {
+            final float alpha = 0.97f;
+
+            synchronized (this) {
+                if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
+
+                    mGravity[0] = alpha * mGravity[0] + (1 - alpha)
+                            * event.values[0];
+                    mGravity[1] = alpha * mGravity[1] + (1 - alpha)
+                            * event.values[1];
+                    mGravity[2] = alpha * mGravity[2] + (1 - alpha)
+                            * event.values[2];
+
+                    // mGravity = event.values;
+
+                    // Log.e(TAG, Float.toString(mGravity[0]));
+                }
+
+                if (event.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD) {
+                    // mGeomagnetic = event.values;
+
+                    mGeomagnetic[0] = alpha * mGeomagnetic[0] + (1 - alpha)
+                            * event.values[0];
+                    mGeomagnetic[1] = alpha * mGeomagnetic[1] + (1 - alpha)
+                            * event.values[1];
+                    mGeomagnetic[2] = alpha * mGeomagnetic[2] + (1 - alpha)
+                            * event.values[2];
+                    // Log.e(TAG, Float.toString(event.values[0]));
+
+                }
+
+                float R[] = new float[9];
+                float I[] = new float[9];
+                boolean success = SensorManager.getRotationMatrix(R, I, mGravity,
+                        mGeomagnetic);
+                if (success) {
+                    float orientation[] = new float[3];
+                    SensorManager.getOrientation(R, orientation);
+                    // Log.d(TAG, "azimuth (rad): " + azimuth);
+                    azimuth = (float) Math.toDegrees(orientation[0]); // orientation
+                    azimuth = (azimuth + 360) % 360;
+
+                    if(bearing) {
+                        if(bearingDegrees != -1) {
+                            azimuth -= bearingDegrees;
+                            adjustArrow();
+                        }
+                    }
+                    else
+                        adjustArrow();
+
+                    // Log.d(TAG, "azimuth (deg): " + azimuth);
+
+                }
+            }
+        }
+
+        @Override
+        public void onAccuracyChanged(Sensor sensor, int accuracy) {
+        }
+    }
+
 }
