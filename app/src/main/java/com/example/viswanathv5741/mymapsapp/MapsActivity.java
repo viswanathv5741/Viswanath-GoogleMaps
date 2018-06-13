@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.hardware.Sensor;
+import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.location.Address;
@@ -24,6 +25,8 @@ import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.Toast;
+import android.view.animation.Animation;
+import android.view.animation.RotateAnimation;
 
 import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -35,6 +38,9 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
+
+//import com.gps.bitlab.fragment.MessageDialogFragment;
+//import com.gps.bitlab.util.Utility;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -74,6 +80,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
+        Compass compass = new Compass(this);
+        compass.startBearing();
     }
 
 
@@ -531,7 +539,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 deviceSensorCompatible = false;
 
             if(!deviceSensorCompatible) {
-                Utility.ShowMessage(activity, activity.getString(R.string.erroroccured), activity.getString(R.string.deviceIncompatible),  1);
+//                Utility.ShowMessage(activity, activity.getString(R.string.erroroccured), activity.getString(R.string.deviceIncompatible),  1);
                 stop();
             }
         }
@@ -559,7 +567,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         private void adjustArrow() {
             if (arrowView == null) {
-                Log.i(TAG, "arrow view is not set");
+                Log.d("myMapsApp", "adjustArrow: arrow view is not set");
                 return;
             }
 
@@ -617,6 +625,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     // Log.d(TAG, "azimuth (rad): " + azimuth);
                     azimuth = (float) Math.toDegrees(orientation[0]); // orientation
                     azimuth = (azimuth + 360) % 360;
+                    Log.d("MyMapsApp","onSensorChanged: azimuth is " + azimuth);
 
                     if(bearing) {
                         if(bearingDegrees != -1) {
