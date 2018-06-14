@@ -48,6 +48,8 @@ import org.jsoup.nodes.Element;
 
 
 import java.io.IOException;
+import java.lang.reflect.Array;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
@@ -80,8 +82,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
-        Compass compass = new Compass(this);
-        compass.startBearing();
     }
 
 
@@ -443,8 +443,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 results = new String[201];
                 int j = 0;
                 while (buffer.indexOf("location")>-1){
-                    mSensorManager = (SensorManager)getSystemService(Context.SENSOR_SERVICE);
-                    mSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR);
                     results[j] = buffer.substring(buffer.indexOf("lat")+7,buffer.indexOf("lng")-3 ) + " " + buffer.substring(buffer.indexOf("lng")+7, buffer.indexOf("lng")+16);
                     buffer = buffer.substring(buffer.indexOf("lng")+20);
                     j++;
@@ -479,24 +477,21 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
     }
 
+    ArrayList<LatLng> allSearchPOI = new ArrayList<LatLng>();
     public void markMaker(){
-
+        Compass compass = new Compass(this);
         for (String str: results){
-
-
             Log.d("MyMaps", "Start Marking");
             searchQ = new LatLng(Double.parseDouble(str.substring(0,str.indexOf(" ")-1)), Double.parseDouble(str.substring(str.indexOf(" ")+1)));
-
             Log.d("MyMaps", ""+searchQ.latitude + " "+searchQ.longitude);
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    mMap.addMarker(new MarkerOptions().position(searchQ).title(locationSearch.getText().toString()).icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)));
+            allSearchPOI.add(searchQ);
+            mMap.addMarker(new MarkerOptions().position(searchQ).title(locationSearch.getText().toString()).icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)));
 
-                }
-            });
-            Log.d("MyMaps", "Stop Marking");
+
+            //Log.d("MyMaps", "Stop Marking");
         }
+        //compass.setMySearchQ(allSearchPOI);
+        //compass.startBearing();
     }
 
     public class Compass implements SensorEventListener {
@@ -509,6 +504,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         private float[] mGeomagnetic = new float[3];
         private float azimuth = 0f;
         private float currectAzimuth = 0;
+        private ArrayList<LatLng> mySearchQ;
 
         private boolean bearing = false;
         private float bearingDegrees = -1;
@@ -542,6 +538,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 //                Utility.ShowMessage(activity, activity.getString(R.string.erroroccured), activity.getString(R.string.deviceIncompatible),  1);
                 stop();
             }
+        }
+
+        public void setMySearchQ(ArrayList<LatLng> x){
+            mySearchQ = x;
+        }
+
+        public float getAzimuth() {
+            return azimuth;
         }
 
         public void startBearing()
@@ -625,21 +629,53 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     // Log.d(TAG, "azimuth (rad): " + azimuth);
                     azimuth = (float) Math.toDegrees(orientation[0]); // orientation
                     azimuth = (azimuth + 360) % 360;
-                    Log.d("MyMapsApp","onSensorChanged: azimuth is " + azimuth);
+                    Log.d("MyMapsApp", "onSensorChanged: azimuth is " + azimuth);
 
-                    if(bearing) {
-                        if(bearingDegrees != -1) {
+                    if (bearing) {
+                        if (bearingDegrees != -1) {
                             azimuth -= bearingDegrees;
                             adjustArrow();
                         }
-                    }
-                    else
+                    } else
                         adjustArrow();
 
                     // Log.d(TAG, "azimuth (deg): " + azimuth);
 
                 }
             }
+//            final ArrayList<String> sweep = null;
+//            final double degrees = getAzimuth();
+//            double sweepAngle = 30.0;
+//            double bound1 = Math.tan(degrees - sweepAngle);
+//            double bound2 = Math.tan(degrees + sweepAngle);
+//            final double uLat = myLocation.getLatitude();
+//            final double uLong = myLocation.getLongitude();
+////            for (final String str : mySearchQ) {
+//                searchQ = new LatLng(Double.parseDouble(str.substring(0,str.indexOf(" ")-1)), Double.parseDouble(str.substring(str.indexOf(" ")+1)));
+//                final double aLat = searchQ.latitude;
+//                final double aLong = searchQ.longitude;
+//                double slope3 = (searchQ.latitude - myLocation.getLatitude()) / (searchQ.longitude - myLocation.getLongitude());
+//
+//                if (slope3 >= bound2 && slope3 <= bound1) {
+//
+//                    if (degrees >= 0 && degrees < 90 && (aLat - uLat) >= 0 && (aLong - uLong) >= 0) {
+//                        sweep.add(str);
+//                    } else if (degrees >= 90 && degrees < 180 && (aLat - uLat) <= 0 && (aLong - uLong) >= 0) {
+//                        sweep.add(str);
+//                    } else if (degrees >= 180 && degrees < 270 && (aLat - uLat) <= 0 && (aLong - uLong) <= 0) {
+//                        sweep.add(str);
+//                    } else if (degrees >= 270 && degrees < 360 && (aLat - uLat) >= 0 && (aLong - uLong) <= 0) {
+//                        sweep.add(str);
+//                    }
+//                    //mMap.addMarker(new MarkerOptions().position(searchQ).title(locationSearch.getText().toString()).icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)));
+//
+//                }
+//            }
+
+//            for (String str: sweep){
+//                searchQ = new LatLng(Double.parseDouble(str.substring(0,str.indexOf(" ")-1)), Double.parseDouble(str.substring(str.indexOf(" ")+1)));
+//                mMap.addMarker(new MarkerOptions().position(searchQ).title(locationSearch.getText().toString()).icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)));
+//            }
         }
 
         @Override
