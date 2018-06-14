@@ -485,7 +485,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             searchQ = new LatLng(Double.parseDouble(str.substring(0,str.indexOf(" ")-1)), Double.parseDouble(str.substring(str.indexOf(" ")+1)));
             Log.d("MyMaps", ""+searchQ.latitude + " "+searchQ.longitude);
             //allSearchPOI.add(searchQ);
-            mMap.addMarker(new MarkerOptions().position(searchQ).title(locationSearch.getText().toString()).icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)));
+            //mMap.addMarker(new MarkerOptions().position(searchQ).title(locationSearch.getText().toString()).icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)));
             Log.d("MyMaps", "Marking");
         }
         //compass.setMySearchQ(allSearchPOI);
