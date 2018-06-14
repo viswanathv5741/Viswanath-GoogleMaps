@@ -484,11 +484,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             Log.d("MyMaps", "Start Marking");
             searchQ = new LatLng(Double.parseDouble(str.substring(0,str.indexOf(" ")-1)), Double.parseDouble(str.substring(str.indexOf(" ")+1)));
             Log.d("MyMaps", ""+searchQ.latitude + " "+searchQ.longitude);
-            allSearchPOI.add(searchQ);
+            //allSearchPOI.add(searchQ);
             mMap.addMarker(new MarkerOptions().position(searchQ).title(locationSearch.getText().toString()).icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)));
-
-
-            //Log.d("MyMaps", "Stop Marking");
+            Log.d("MyMaps", "Marking");
         }
         //compass.setMySearchQ(allSearchPOI);
         //compass.startBearing();
@@ -643,9 +641,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
                 }
             }
-//            final ArrayList<String> sweep = null;
-//            final double degrees = getAzimuth();
-//            double sweepAngle = 30.0;
+            final ArrayList<LatLng> sweep = null;
+            final double degrees = getAzimuth();
+            double sweepAngle = 30.0;
 //            double bound1 = Math.tan(degrees - sweepAngle);
 //            double bound2 = Math.tan(degrees + sweepAngle);
 //            final double uLat = myLocation.getLatitude();
